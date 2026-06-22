@@ -147,6 +147,34 @@ const Profile = () => {
         }
     }, [user]);
 
+    const [activities, setActivities] = useState([]);
+
+    useEffect(() => {
+        if (!user) return;
+        const list = [
+            {
+                id: 'register',
+                title: 'Joined CircuitCrate',
+                description: 'Account successfully registered and verified.',
+                date: new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                timestamp: new Date(user.created_at).getTime()
+            }
+        ];
+
+        dbCertificates.forEach(cert => {
+            list.push({
+                id: cert.id,
+                title: `Earned Certificate: ${cert.certificate_title}`,
+                description: `Verified certificate ID ${cert.certificate_id} issued.`,
+                date: new Date(cert.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                timestamp: new Date(cert.issue_date).getTime()
+            });
+        });
+
+        list.sort((a, b) => b.timestamp - a.timestamp);
+        setActivities(list);
+    }, [user, dbCertificates]);
+
     if (loading || !user) {
         return (
             <div className="min-h-screen w-full flex items-center justify-center bg-black">
@@ -158,85 +186,45 @@ const Profile = () => {
     const displayName = nameInput || 'User';
     const initials = displayName.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-    // Enrolled courses (mock status matching layout cards)
-    const enrolledCourses = [
-        {
-            ...coursesData[0], // Foundations of Electronics
-            progress: 80,
-            lastAccessed: '2 hours ago',
-            status: 'In Progress',
-            subtitle: 'You need a headquarter for computer'
-        },
-        {
-            ...coursesData[1], // Arduino Masterclass
-            progress: 40,
-            lastAccessed: 'Yesterday',
-            status: 'In Progress',
-            subtitle: 'Here is Graphic department'
-        },
-        {
-            ...coursesData[4], // 3D Printing Basics
-            progress: 100,
-            lastAccessed: '3 days ago',
-            status: 'Completed',
-            subtitle: 'Foundation is important for computer'
-        }
-    ];
+    // Calculate active days since registration
+    const activeDays = Math.max(1, Math.ceil((new Date() - new Date(user.created_at)) / (1000 * 60 * 60 * 24)));
 
-    // Active projects (mock step progress)
-    const activeProjects = [
-        {
-            ...projectsData[0], // LED Circuit Logic
-            completedSteps: 5,
-            totalSteps: 5,
-            status: 'Completed',
-            lastUpdated: 'June 20, 2026'
-        },
-        {
-            ...projectsData[3], // Smart Night Light
-            completedSteps: 3,
-            totalSteps: 5,
-            status: 'In Progress',
-            lastUpdated: 'June 22, 2026'
-        }
-    ];
+    // Derive real completed courses from Supabase certificates
+    const completedCourses = dbCertificates
+        .filter(c => c.certificate_type === 'course' || !c.certificate_type)
+        .map(cert => {
+            const match = coursesData.find(cd => cd.title.toLowerCase() === cert.certificate_title.toLowerCase());
+            return {
+                id: cert.id,
+                title: cert.certificate_title,
+                category: match?.category || 'Electronics',
+                image: match?.image || '',
+                color: match?.color || '#ef4444',
+                progress: 100,
+                status: 'Completed',
+                lastAccessed: new Date(cert.issue_date).toLocaleDateString()
+            };
+        });
 
-    // Timeline Log
-    const activities = [
-        {
-            id: 1,
-            title: 'Started Smart Night Light project',
-            description: 'Completed transistor-based LDR trigger configuration.',
-            date: 'Today, 2:15 PM'
-        },
-        {
-            id: 2,
-            title: 'Enrolled in Arduino Masterclass',
-            description: 'Started beginner hardware coding modules.',
-            date: 'Yesterday, 10:30 AM'
-        },
-        {
-            id: 3,
-            title: 'Completed 3D Printing Basics Course',
-            description: 'Final design files exported and verified successfully.',
-            date: 'June 19, 2026'
-        }
-    ];
+    // Derive real completed projects from certificates
+    const completedProjects = dbCertificates
+        .filter(c => c.certificate_type === 'project')
+        .map(cert => {
+            const match = projectsData.find(pd => pd.title.toLowerCase() === cert.certificate_title.toLowerCase());
+            return {
+                id: cert.id,
+                title: cert.certificate_title,
+                category: match?.category || 'Hardware',
+                image: match?.image || '',
+                difficulty: match?.difficulty || 'Intermediate',
+                completedSteps: 5,
+                totalSteps: 5,
+                status: 'Completed',
+                lastUpdated: new Date(cert.issue_date).toLocaleDateString()
+            };
+        });
 
-    // Certificates data (actual Supabase fetch + mock fallback if none exist)
-    const fallbackCertificates = [
-        {
-            id: 'fallback-1',
-            certificate_id: 'CERT-2026-X102',
-            certificate_title: 'Foundations of Electronics',
-            issue_date: '2026-06-20',
-            verification_status: true,
-            certificate_pdf_url: '#',
-            certificate_type: 'course'
-        }
-    ];
-
-    const certificatesToDisplay = dbCertificates.length > 0 ? dbCertificates : fallbackCertificates;
+    const certificatesToDisplay = dbCertificates;
 
     const handleSignOut = async () => {
         await signOut();
@@ -324,26 +312,41 @@ const Profile = () => {
                             </div>
 
                             {/* Active Course Carousel Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                {enrolledCourses.map((c) => (
-                                    <div key={c.id} className="relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-5 space-y-4 hover:border-zinc-700/80 transition-all duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] uppercase font-bold tracking-wide text-zinc-500">{c.category}</span>
-                                            <span className="text-xs font-semibold" style={{ color: c.color }}>{c.progress}%</span>
+                            {completedCourses.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {completedCourses.map((c) => (
+                                        <div key={c.id} className="relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-5 space-y-4 hover:border-zinc-700/80 transition-all duration-300">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] uppercase font-bold tracking-wide text-zinc-500">{c.category}</span>
+                                                <span className="text-xs font-semibold text-emerald-400">{c.progress}%</span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h4 className="font-extrabold text-sm text-zinc-100 truncate">{c.title}</h4>
+                                                <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">Completed on {c.lastAccessed}</p>
+                                            </div>
+                                            <div className="w-full h-1 bg-zinc-850 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full rounded-full bg-emerald-500" 
+                                                    style={{ width: '100%' }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <h4 className="font-extrabold text-sm text-zinc-100 truncate">{c.title}</h4>
-                                            <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">{c.desc}</p>
-                                        </div>
-                                        <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full rounded-full" 
-                                                style={{ width: `${c.progress}%`, backgroundColor: c.color }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-6 bg-gradient-to-r from-red-950/20 to-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-3">
+                                    <h3 className="font-extrabold text-lg text-white">Start Your Learning Journey</h3>
+                                    <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
+                                        You haven't completed any courses yet. Browse our interactive curriculum, complete lessons, and unlock your first verified certificate!
+                                    </p>
+                                    <Link 
+                                        to="/courses"
+                                        className="inline-flex px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all uppercase tracking-wide cursor-pointer"
+                                    >
+                                        Explore Courses
+                                    </Link>
+                                </div>
+                            )}
 
                             {/* Bottom Split Layout: Activity logs & Certificates Overview */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -351,94 +354,137 @@ const Profile = () => {
                                 <div className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
                                     <h3 className="text-lg font-bold text-zinc-100 uppercase tracking-tight">Activity Log</h3>
                                     <div className="space-y-4">
-                                        {activities.map((act) => (
-                                            <div key={act.id} className="flex gap-3 items-start">
-                                                <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                                                <div className="space-y-0.5">
-                                                    <h5 className="font-extrabold text-sm text-zinc-200">{act.title}</h5>
-                                                    <p className="text-xs text-zinc-400">{act.description}</p>
-                                                    <span className="text-[10px] text-zinc-500 block">{act.date}</span>
+                                        {activities.length > 0 ? (
+                                            activities.map((act) => (
+                                                <div key={act.id} className="flex gap-3 items-start">
+                                                    <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                                                    <div className="space-y-0.5">
+                                                        <h5 className="font-extrabold text-sm text-zinc-200">{act.title}</h5>
+                                                        <p className="text-xs text-zinc-400">{act.description}</p>
+                                                        <span className="text-[10px] text-zinc-555 block">{act.date}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-zinc-500">No recent activity logs.</p>
+                                        )}
                                     </div>
                                 </div>
 
                                 {/* Right Side: Latest Certificate summary */}
                                 <div className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl flex flex-col justify-between gap-4">
-                                    <div className="space-y-2">
-                                        <div className="inline-flex px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] uppercase font-bold tracking-wider">
-                                            Latest Certificate
-                                        </div>
-                                        <h3 className="text-xl font-extrabold text-white leading-tight">
-                                            {certificatesToDisplay[0]?.certificate_title || 'Introduction to Robotics'}
-                                        </h3>
-                                        <p className="text-xs text-zinc-400">
-                                            ID: {certificatesToDisplay[0]?.certificate_id} • Issued on {certificatesToDisplay[0]?.issue_date}
-                                        </p>
-                                    </div>
-                                    <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between">
-                                        <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                                            <CheckCircle size={14} />
-                                            Verified Account
-                                        </span>
-                                        <button 
-                                            onClick={() => setActiveTab('certificates')}
-                                            className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 cursor-pointer"
-                                        >
-                                            View All
-                                            <ChevronRight size={14} />
-                                        </button>
-                                    </div>
+                                    {certificatesToDisplay.length > 0 ? (
+                                        <>
+                                            <div className="space-y-2">
+                                                <div className="inline-flex px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] uppercase font-bold tracking-wider">
+                                                    Latest Certificate
+                                                </div>
+                                                <h3 className="text-xl font-extrabold text-white leading-tight">
+                                                    {certificatesToDisplay[0].certificate_title}
+                                                </h3>
+                                                <p className="text-xs text-zinc-400">
+                                                    ID: {certificatesToDisplay[0].certificate_id} • Issued on {certificatesToDisplay[0].issue_date}
+                                                </p>
+                                            </div>
+                                            <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                                                    <CheckCircle size={14} />
+                                                    Verified Certificate
+                                                </span>
+                                                <button 
+                                                    onClick={() => setActiveTab('certificates')}
+                                                    className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                                                >
+                                                    View All
+                                                    <ChevronRight size={14} />
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="space-y-2">
+                                                <div className="inline-flex px-2.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 text-[10px] uppercase font-bold tracking-wider">
+                                                    Latest Certificate
+                                                </div>
+                                                <h3 className="text-lg font-extrabold text-white leading-tight">
+                                                    No certificates earned yet
+                                                </h3>
+                                                <p className="text-xs text-zinc-400">
+                                                    Complete courses and pass evaluations to receive your verified certifications here.
+                                                </p>
+                                            </div>
+                                            <div className="pt-4 border-t border-zinc-800/80 flex justify-end">
+                                                <Link 
+                                                    to="/courses"
+                                                    className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 cursor-pointer"
+                                                >
+                                                    Browse Courses
+                                                    <ChevronRight size={14} />
+                                                </Link>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     )}
-
-                    {/* TAB: MY COURSES */}
                     {activeTab === 'courses' && (
                         <div className="space-y-6">
                             <div>
                                 <h1 className="text-3xl font-extrabold text-white uppercase">My Courses</h1>
-                                <p className="text-zinc-400 text-sm mt-1">Manage and resume your enrolled classes.</p>
+                                <p className="text-zinc-400 text-sm mt-1">Review your completed courses.</p>
                             </div>
-                            <div className="grid grid-cols-1 gap-4">
-                                {enrolledCourses.map((course) => (
-                                    <div key={course.id} className="group p-5 bg-zinc-900/30 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl flex flex-col sm:flex-row gap-4 transition-all duration-300">
-                                        <div className="w-20 h-20 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                                            <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1 space-y-3 min-w-0">
-                                            <div>
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
-                                                        {course.category}
-                                                    </span>
-                                                    <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                                                        <Clock size={12} />
-                                                        Last active {course.lastAccessed}
-                                                    </span>
+                            {completedCourses.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {completedCourses.map((course) => (
+                                        <div key={course.id} className="group p-5 bg-zinc-900/30 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl flex flex-col sm:flex-row gap-4 transition-all duration-300">
+                                            {course.image && (
+                                                <div className="w-20 h-20 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                                                    <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
                                                 </div>
-                                                <h3 className="font-bold text-lg text-white group-hover:text-red-500 transition-colors truncate mt-1">
-                                                    {course.title}
-                                                </h3>
+                                            )}
+                                            <div className="flex-1 space-y-3 min-w-0">
+                                                <div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
+                                                            {course.category}
+                                                        </span>
+                                                        <span className="text-[10px] text-zinc-555 flex items-center gap-1">
+                                                            <Clock size={12} />
+                                                            Completed {course.lastAccessed}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="font-bold text-lg text-white group-hover:text-red-500 transition-colors truncate mt-1">
+                                                        {course.title}
+                                                    </h3>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between text-xs text-zinc-400">
+                                                        <span>Progress</span>
+                                                        <span className="font-bold text-emerald-400">100%</span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-zinc-850 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-emerald-500"
+                                                            style={{ width: '100%' }}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between text-xs text-zinc-400">
-                                                    <span>Progress</span>
-                                                    <span className="font-bold">{course.progress}%</span>
-                                                </div>
-                                                <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-gradient-to-r from-red-500 to-amber-500 transition-all duration-500"
-                                                        style={{ width: `${course.progress}%` }}
-                                                    />
-                                                </div>
-                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
+                                    <p className="text-zinc-400 text-sm">No courses completed yet.</p>
+                                    <Link 
+                                        to="/courses"
+                                        className="inline-flex px-4 py-2 bg-red-650 hover:bg-red-550 text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                    >
+                                        Start Learning
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -447,47 +493,59 @@ const Profile = () => {
                         <div className="space-y-6">
                             <div>
                                 <h1 className="text-3xl font-extrabold text-white uppercase">Hardware Projects</h1>
-                                <p className="text-zinc-400 text-sm mt-1">Review active circuitry building milestones.</p>
+                                <p className="text-zinc-400 text-sm mt-1">Review your completed hardware projects.</p>
                             </div>
-                            <div className="grid grid-cols-1 gap-4">
-                                {activeProjects.map((project) => (
-                                    <div key={project.id} className="p-5 bg-zinc-900/30 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl space-y-4 transition-all duration-300">
-                                        <div className="flex gap-4">
-                                            <div className="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                                                <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
-                                                        {project.category}
-                                                    </span>
-                                                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded ${
-                                                        project.difficulty === 'Beginner' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
-                                                    }`}>
-                                                        {project.difficulty}
-                                                    </span>
+                            {completedProjects.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {completedProjects.map((project) => (
+                                        <div key={project.id} className="p-5 bg-zinc-900/30 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl space-y-4 transition-all duration-300">
+                                            <div className="flex gap-4">
+                                                {project.image && (
+                                                    <div className="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                                                        <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
+                                                            {project.category}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}>
+                                                            {project.difficulty}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="font-bold text-lg text-white mt-1 truncate">
+                                                        {project.title}
+                                                    </h3>
                                                 </div>
-                                                <h3 className="font-bold text-lg text-white mt-1 truncate">
-                                                    {project.title}
-                                                </h3>
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-xs text-zinc-400">
-                                                <span>Steps Completed</span>
-                                                <span>{project.completedSteps}/{project.totalSteps}</span>
-                                            </div>
-                                            <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-red-500"
-                                                    style={{ width: `${(project.completedSteps / project.totalSteps) * 100}%` }}
-                                                />
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-xs text-zinc-400">
+                                                    <span>Steps Completed</span>
+                                                    <span>5/5</span>
+                                                </div>
+                                                <div className="w-full h-1 bg-zinc-850 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-emerald-500"
+                                                        style={{ width: '100%' }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
+                                    <p className="text-zinc-400 text-sm">No hardware projects built yet.</p>
+                                    <Link 
+                                        to="/learning"
+                                        className="inline-flex px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                    >
+                                        Explore Projects
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -504,57 +562,63 @@ const Profile = () => {
                                     <div className="w-6 h-6 border-2 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 gap-4">
-                                    {certificatesToDisplay.map((cert) => (
-                                        <div key={cert.id} className="p-5 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4 hover:border-zinc-700/80 transition-all duration-300">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex gap-4">
-                                                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
-                                                        <Award size={24} />
+                                certificatesToDisplay.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {certificatesToDisplay.map((cert) => (
+                                            <div key={cert.id} className="p-5 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4 hover:border-zinc-700/80 transition-all duration-300">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex gap-4">
+                                                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                                                            <Award size={24} />
+                                                        </div>
+                                                        <div>
+                                                            <span className="px-2 py-0.5 bg-zinc-800 text-[9px] uppercase font-bold text-zinc-400 tracking-wider rounded">
+                                                                {cert.certificate_type || 'Course Completion'}
+                                                            </span>
+                                                            <h3 className="font-extrabold text-lg text-white mt-1">
+                                                                {cert.certificate_title}
+                                                            </h3>
+                                                            <p className="text-xs text-zinc-500 mt-0.5">
+                                                                ID: {cert.certificate_id} • Issued {cert.issue_date}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <span className="px-2 py-0.5 bg-zinc-800 text-[9px] uppercase font-bold text-zinc-400 tracking-wider rounded">
-                                                            {cert.certificate_type || 'Course Completion'}
-                                                        </span>
-                                                        <h3 className="font-extrabold text-lg text-white mt-1">
-                                                            {cert.certificate_title || 'Foundations of Electronics'}
-                                                        </h3>
-                                                        <p className="text-xs text-zinc-500 mt-0.5">
-                                                            ID: {cert.certificate_id} • Issued {cert.issue_date}
-                                                        </p>
-                                                    </div>
+
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
+                                                        <CheckCircle size={10} />
+                                                        {cert.verification_status ? 'Verified' : 'Pending'}
+                                                    </span>
                                                 </div>
 
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
-                                                    <CheckCircle size={10} />
-                                                    {cert.verification_status ? 'Verified' : 'Pending'}
-                                                </span>
-                                            </div>
-
-                                            <div className="pt-4 border-t border-zinc-800/80 flex items-center gap-3 justify-end">
-                                                {cert.certificate_pdf_url && cert.certificate_pdf_url !== '#' && (
-                                                    <a
-                                                        href={cert.certificate_pdf_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-white rounded-lg text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                                <div className="pt-4 border-t border-zinc-800/80 flex items-center gap-3 justify-end">
+                                                    {cert.certificate_pdf_url && cert.certificate_pdf_url !== '#' && (
+                                                        <a
+                                                            href={cert.certificate_pdf_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-white rounded-lg text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                                        >
+                                                            <Download size={14} />
+                                                            Download PDF
+                                                        </a>
+                                                    )}
+                                                    <Link
+                                                        to={`/certificate/${cert.certificate_id}`}
+                                                        className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
                                                     >
-                                                        <Download size={14} />
-                                                        Download PDF
-                                                    </a>
-                                                )}
-                                                <Link
-                                                    to={`/certificate/${cert.certificate_id}`}
-                                                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
-                                                >
-                                                    <FileText size={14} />
-                                                    View Details
-                                                    <ExternalLink size={12} />
-                                                </Link>
+                                                        <FileText size={14} />
+                                                        View Details
+                                                        <ExternalLink size={12} />
+                                                    </Link>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-8 text-center bg-zinc-900/30 border border-zinc-800/80 rounded-2xl">
+                                        <p className="text-zinc-400 text-sm">No verified certificates found on your account.</p>
+                                    </div>
+                                )
                             )}
                         </div>
                     )}
@@ -721,11 +785,11 @@ const Profile = () => {
                         <div className="w-full grid grid-cols-2 gap-3 pt-4 border-t border-zinc-800/80">
                             <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
                                 <span className="text-[10px] uppercase font-bold text-zinc-500">enrolled</span>
-                                <h4 className="font-extrabold text-lg text-zinc-100">{enrolledCourses.length}</h4>
+                                <h4 className="font-extrabold text-lg text-zinc-100">{completedCourses.length}</h4>
                             </div>
                             <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
                                 <span className="text-[10px] uppercase font-bold text-zinc-500">projects</span>
-                                <h4 className="font-extrabold text-lg text-zinc-100">{activeProjects.length}</h4>
+                                <h4 className="font-extrabold text-lg text-zinc-100">{completedProjects.length}</h4>
                             </div>
                             <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
                                 <span className="text-[10px] uppercase font-bold text-zinc-500">certificates</span>
@@ -733,29 +797,7 @@ const Profile = () => {
                             </div>
                             <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
                                 <span className="text-[10px] uppercase font-bold text-zinc-500">active days</span>
-                                <h4 className="font-extrabold text-lg text-zinc-100">12</h4>
-                            </div>
-                        </div>
-
-                        {/* Progress meters matching reference */}
-                        <div className="w-full space-y-4 pt-4 border-t border-zinc-800/80 text-left">
-                            <div className="space-y-1">
-                                <div className="flex items-center justify-between text-xs text-zinc-400">
-                                    <span>Your Rank</span>
-                                    <span className="font-bold text-red-500">Top 32%</span>
-                                </div>
-                                <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-red-500 to-amber-500" style={{ width: '32%' }} />
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="flex items-center justify-between text-xs text-zinc-400">
-                                    <span>XP Level Progress</span>
-                                    <span className="font-bold text-red-500">70%</span>
-                                </div>
-                                <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-red-500 to-amber-500" style={{ width: '70%' }} />
-                                </div>
+                                <h4 className="font-extrabold text-lg text-zinc-100">{activeDays}</h4>
                             </div>
                         </div>
 
