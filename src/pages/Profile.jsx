@@ -240,10 +240,13 @@ const Profile = () => {
                     {/* App Identity Box Removed */} 
 
                     {/* Sidebar Buttons */}
-                    <div className="bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-3 space-y-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1">
+                    <div 
+                        className="bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-2 lg:p-3 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1 space-y-0 lg:space-y-1"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
                         <button
                             onClick={() => setActiveTab('dashboard')}
-                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                            className={`w-auto lg:w-full py-2.5 lg:py-3 px-3 lg:px-4 rounded-xl text-xs lg:text-sm font-bold flex items-center justify-center lg:justify-start gap-2 lg:gap-3 shrink-0 whitespace-nowrap transition-all cursor-pointer ${
                                 activeTab === 'dashboard'
                                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
                                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
@@ -254,7 +257,7 @@ const Profile = () => {
                         </button>
                         <button
                             onClick={() => setActiveTab('courses')}
-                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                            className={`w-auto lg:w-full py-2.5 lg:py-3 px-3 lg:px-4 rounded-xl text-xs lg:text-sm font-bold flex items-center justify-center lg:justify-start gap-2 lg:gap-3 shrink-0 whitespace-nowrap transition-all cursor-pointer ${
                                 activeTab === 'courses'
                                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
                                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
@@ -265,7 +268,7 @@ const Profile = () => {
                         </button>
                         <button
                             onClick={() => setActiveTab('projects')}
-                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                            className={`w-auto lg:w-full py-2.5 lg:py-3 px-3 lg:px-4 rounded-xl text-xs lg:text-sm font-bold flex items-center justify-center lg:justify-start gap-2 lg:gap-3 shrink-0 whitespace-nowrap transition-all cursor-pointer ${
                                 activeTab === 'projects'
                                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
                                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
@@ -276,7 +279,7 @@ const Profile = () => {
                         </button>
                         <button
                             onClick={() => setActiveTab('certificates')}
-                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                            className={`w-auto lg:w-full py-2.5 lg:py-3 px-3 lg:px-4 rounded-xl text-xs lg:text-sm font-bold flex items-center justify-center lg:justify-start gap-2 lg:gap-3 shrink-0 whitespace-nowrap transition-all cursor-pointer ${
                                 activeTab === 'certificates'
                                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
                                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
@@ -287,7 +290,7 @@ const Profile = () => {
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
-                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                            className={`w-auto lg:w-full py-2.5 lg:py-3 px-3 lg:px-4 rounded-xl text-xs lg:text-sm font-bold flex items-center justify-center lg:justify-start gap-2 lg:gap-3 shrink-0 whitespace-nowrap transition-all cursor-pointer ${
                                 activeTab === 'settings'
                                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
                                     : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
