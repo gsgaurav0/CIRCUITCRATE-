@@ -3,9 +3,13 @@ import { Outlet } from 'react-router-dom';
 import StaggeredMenu from './StaggeredMenu';
 import Footer from './Footer';
 import logo from '../assets/c2_logo.png';
+import { useAuth } from '../context/AuthContext';
 
 const Layout = () => {
+    const { user } = useAuth();
 
+    // Determine the name to show on the profile menu option
+    const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Profile';
 
     const menuItems = [
         { label: 'Home', ariaLabel: 'Home', link: '/' },
@@ -13,7 +17,9 @@ const Layout = () => {
         { label: 'Projects', ariaLabel: 'Projects', link: '/learning' },
         { label: 'Workshops', ariaLabel: 'Events', link: '/workshops' },
         { label: 'Contact', ariaLabel: 'Contact', link: '/contact' },
-        { label: 'Login', ariaLabel: 'Login', link: '/auth' }
+        user 
+            ? { label: displayName, ariaLabel: 'Profile Dashboard', link: '/profile' }
+            : { label: 'Login', ariaLabel: 'Sign In / Sign Up', link: '/auth' }
     ];
 
     const socialItems = [

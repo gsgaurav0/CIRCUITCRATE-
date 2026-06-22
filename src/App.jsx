@@ -11,6 +11,7 @@ const LearningPage = lazy(() => import('./pages/LearningPage'));
 const WorkshopsPage = lazy(() => import('./pages/WorkshopsPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
+const Profile = lazy(() => import('./pages/Profile'));
 const NotFoundPage = lazy(() => import('./components/demo-404'));
 
 // Minimal fallback loader
@@ -34,6 +35,7 @@ function App() {
               <Route path="workshops" element={<WorkshopsPage />} />
               <Route path="contact" element={<ContactPage />} />
               <Route path="auth" element={<AuthPage />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
