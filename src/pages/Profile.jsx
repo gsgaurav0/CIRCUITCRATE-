@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Cpu, Activity, LogOut, CheckCircle, Clock, ChevronRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { 
+    BookOpen, Cpu, Award, Settings, LogOut, CheckCircle, 
+    Clock, ChevronRight, User, ExternalLink, Download, FileText 
+} from 'lucide-react';
 import { coursesData } from '../data/coursesData';
 import { projectsData } from '../data/projectsData';
 
 const Profile = () => {
     const { user, signOut, loading } = useAuth();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('courses');
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [dbCertificates, setDbCertificates] = useState([]);
+    const [loadingCerts, setLoadingCerts] = useState(true);
 
     // Redirect to login if user is not authenticated
     useEffect(() => {
@@ -16,6 +22,31 @@ const Profile = () => {
             navigate('/auth');
         }
     }, [user, loading, navigate]);
+
+    // Fetch user certificates from Supabase
+    useEffect(() => {
+        const fetchCertificates = async () => {
+            if (!user) return;
+            try {
+                setLoadingCerts(true);
+                const { data, error } = await supabase
+                    .from('certificates')
+                    .select('*')
+                    .eq('candidate_email', user.email);
+
+                if (error) throw error;
+                setDbCertificates(data || []);
+            } catch (err) {
+                console.warn('Failed to fetch certificates from Supabase:', err);
+            } finally {
+                setLoadingCerts(false);
+            }
+        };
+
+        if (user) {
+            fetchCertificates();
+        }
+    }, [user]);
 
     if (loading || !user) {
         return (
@@ -28,29 +59,32 @@ const Profile = () => {
     const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
     const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-    // Mock enrolled courses with progress
+    // Enrolled courses (mock status matching layout cards)
     const enrolledCourses = [
         {
             ...coursesData[0], // Foundations of Electronics
             progress: 80,
             lastAccessed: '2 hours ago',
-            status: 'In Progress'
+            status: 'In Progress',
+            subtitle: 'You need a headquarter for computer'
         },
         {
             ...coursesData[1], // Arduino Masterclass
             progress: 40,
             lastAccessed: 'Yesterday',
-            status: 'In Progress'
+            status: 'In Progress',
+            subtitle: 'Here is Graphic department'
         },
         {
             ...coursesData[4], // 3D Printing Basics
             progress: 100,
             lastAccessed: '3 days ago',
-            status: 'Completed'
+            status: 'Completed',
+            subtitle: 'Foundation is important for computer'
         }
     ];
 
-    // Mock active projects with step progress
+    // Active projects (mock step progress)
     const activeProjects = [
         {
             ...projectsData[0], // LED Circuit Logic
@@ -68,41 +102,42 @@ const Profile = () => {
         }
     ];
 
-    // Mock activity timeline
+    // Timeline Log
     const activities = [
         {
             id: 1,
             title: 'Started Smart Night Light project',
             description: 'Completed transistor-based LDR trigger configuration.',
-            date: 'Today, 2:15 PM',
-            icon: Cpu,
-            color: 'text-sky-400 bg-sky-500/10'
+            date: 'Today, 2:15 PM'
         },
         {
             id: 2,
             title: 'Enrolled in Arduino Masterclass',
             description: 'Started beginner hardware coding modules.',
-            date: 'Yesterday, 10:30 AM',
-            icon: BookOpen,
-            color: 'text-purple-400 bg-purple-500/10'
+            date: 'Yesterday, 10:30 AM'
         },
         {
             id: 3,
             title: 'Completed 3D Printing Basics Course',
             description: 'Final design files exported and verified successfully.',
-            date: 'June 19, 2026',
-            icon: CheckCircle,
-            color: 'text-emerald-400 bg-emerald-500/10 animate-pulse'
-        },
-        {
-            id: 4,
-            title: 'Joined CircuitCrate Platform',
-            description: 'Account created and authenticated.',
-            date: 'June 18, 2026',
-            icon: Activity,
-            color: 'text-rose-400 bg-rose-500/10'
+            date: 'June 19, 2026'
         }
     ];
+
+    // Certificates data (actual Supabase fetch + mock fallback if none exist)
+    const fallbackCertificates = [
+        {
+            id: 'fallback-1',
+            certificate_id: 'CERT-2026-X102',
+            certificate_title: 'Foundations of Electronics',
+            issue_date: '2026-06-20',
+            verification_status: true,
+            certificate_pdf_url: '#',
+            certificate_type: 'course'
+        }
+    ];
+
+    const certificatesToDisplay = dbCertificates.length > 0 ? dbCertificates : fallbackCertificates;
 
     const handleSignOut = async () => {
         await signOut();
@@ -110,208 +145,441 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white pt-24 pb-16 px-4 md:px-8 font-[sans-serif]">
-            <div className="max-w-6xl mx-auto space-y-8">
+        <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-16 px-4 md:px-8 font-[sans-serif]">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
-                {/* 1. Header Profile Card */}
-                <div className="relative overflow-hidden rounded-2xl bg-zinc-900/50 border border-zinc-800 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm">
-                    <div className="flex items-center gap-5 flex-col md:flex-row text-center md:text-left">
-                        {/* Avatar */}
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-2xl font-bold tracking-wider shadow-lg shadow-red-500/20">
-                            {initials}
-                        </div>
-                        {/* User Details */}
-                        <div className="space-y-1">
-                            <h1 className="text-3xl font-extrabold tracking-tight">{displayName}</h1>
-                            <p className="text-zinc-400 text-sm">{user.email}</p>
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-800 rounded-full text-xs font-semibold text-zinc-300 border border-zinc-700/50">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Active Learner
+                {/* COLUMN 1: LEFT SIDEBAR NAVIGATION */}
+                <div className="lg:col-span-3 space-y-6">
+                    {/* App Identity */}
+                    <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl hidden lg:block">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center font-black text-xl text-white">
+                                C²
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-sm tracking-wide uppercase text-white">CircuitCrate</h3>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">LMS Dashboard</p>
                             </div>
                         </div>
                     </div>
-                    {/* Logout Button */}
-                    <button
-                        onClick={handleSignOut}
-                        className="px-5 py-3 border border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-950/80 rounded-xl text-zinc-300 hover:text-white text-sm font-semibold flex items-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
-                    >
-                        <LogOut size={16} />
-                        Sign Out
-                    </button>
+
+                    {/* Sidebar Buttons */}
+                    <div className="bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-3 space-y-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1">
+                        <button
+                            onClick={() => setActiveTab('dashboard')}
+                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                                activeTab === 'dashboard'
+                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                    : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+                            }`}
+                        >
+                            <User size={16} />
+                            Dashboard
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('courses')}
+                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                                activeTab === 'courses'
+                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                    : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+                            }`}
+                        >
+                            <BookOpen size={16} />
+                            My Courses
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('projects')}
+                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                                activeTab === 'projects'
+                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                    : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+                            }`}
+                        >
+                            <Cpu size={16} />
+                            My Projects
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('certificates')}
+                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                                activeTab === 'certificates'
+                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                    : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+                            }`}
+                        >
+                            <Award size={16} />
+                            Certificates
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 shrink-0 transition-all cursor-pointer ${
+                                activeTab === 'settings'
+                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                    : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+                            }`}
+                        >
+                            <Settings size={16} />
+                            Settings
+                        </button>
+                    </div>
                 </div>
 
-                {/* 2. Tabs Selector */}
-                <div className="flex border-b border-zinc-800/80">
-                    <button
-                        onClick={() => setActiveTab('courses')}
-                        className={`py-4 px-6 text-sm font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
-                            activeTab === 'courses'
-                                ? 'border-red-500 text-red-500 bg-red-500/5'
-                                : 'border-transparent text-zinc-400 hover:text-zinc-200'
-                        }`}
-                    >
-                        <BookOpen size={16} />
-                        Courses ({enrolledCourses.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('projects')}
-                        className={`py-4 px-6 text-sm font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
-                            activeTab === 'projects'
-                                ? 'border-red-500 text-red-500 bg-red-500/5'
-                                : 'border-transparent text-zinc-400 hover:text-zinc-200'
-                        }`}
-                    >
-                        <Cpu size={16} />
-                        Projects ({activeProjects.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('activities')}
-                        className={`py-4 px-6 text-sm font-bold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
-                            activeTab === 'activities'
-                                ? 'border-red-500 text-red-500 bg-red-500/5'
-                                : 'border-transparent text-zinc-400 hover:text-zinc-200'
-                        }`}
-                    >
-                        <Activity size={16} />
-                        Activity Logs
-                    </button>
-                </div>
+                {/* COLUMN 2: MAIN DYNAMIC CONTENT */}
+                <div className="lg:col-span-6 space-y-8 min-w-0">
+                    
+                    {/* TAB: DASHBOARD */}
+                    {activeTab === 'dashboard' && (
+                        <div className="space-y-8">
+                            {/* Profile Header Greeting */}
+                            <div>
+                                <h1 className="text-4xl font-extrabold tracking-tight text-white uppercase">Profile</h1>
+                                <p className="text-zinc-400 text-sm mt-1">Welcome back to your dashboard! Here to check your activity you done!</p>
+                            </div>
 
-                {/* 3. Tab Contents */}
-                <div className="mt-6">
-                    {/* Courses Tab */}
-                    {activeTab === 'courses' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {enrolledCourses.map((course) => (
-                                <div key={course.id} className="group p-5 bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl flex gap-4 transition-all duration-300">
-                                    <div className="w-20 h-20 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                                        <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="flex-1 space-y-3 min-w-0">
-                                        <div>
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
-                                                    {course.category}
-                                                </span>
-                                                <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                                                    <Clock size={12} />
-                                                    {course.lastAccessed}
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-lg text-white group-hover:text-red-500 transition-colors truncate mt-1">
-                                                {course.title}
-                                            </h3>
+                            {/* Active Course Carousel Cards */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {enrolledCourses.map((c) => (
+                                    <div key={c.id} className="relative overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-5 space-y-4 hover:border-zinc-700/80 transition-all duration-300">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] uppercase font-bold tracking-wide text-zinc-500">{c.category}</span>
+                                            <span className="text-xs font-semibold" style={{ color: c.color }}>{c.progress}%</span>
                                         </div>
-                                        {/* Progress Bar */}
                                         <div className="space-y-1">
-                                            <div className="flex items-center justify-between text-xs text-zinc-400">
-                                                <span>Progress</span>
-                                                <span className="font-bold">{course.progress}%</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-gradient-to-r from-red-500 to-amber-500 transition-all duration-500"
-                                                    style={{ width: `${course.progress}%` }}
-                                                />
-                                            </div>
+                                            <h4 className="font-extrabold text-sm text-zinc-100 truncate">{c.title}</h4>
+                                            <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">{c.desc}</p>
                                         </div>
-                                        <button className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-0.5 group-hover:gap-1 transition-all cursor-pointer">
-                                            {course.status === 'Completed' ? 'Review Lessons' : 'Resume Learning'}
+                                        <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full rounded-full" 
+                                                style={{ width: `${c.progress}%`, backgroundColor: c.color }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Bottom Split Layout: Activity logs & Certificates Overview */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Left Side: Activity Logs */}
+                                <div className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
+                                    <h3 className="text-lg font-bold text-zinc-100 uppercase tracking-tight">Activity Log</h3>
+                                    <div className="space-y-4">
+                                        {activities.map((act) => (
+                                            <div key={act.id} className="flex gap-3 items-start">
+                                                <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                                                <div className="space-y-0.5">
+                                                    <h5 className="font-extrabold text-sm text-zinc-200">{act.title}</h5>
+                                                    <p className="text-xs text-zinc-400">{act.description}</p>
+                                                    <span className="text-[10px] text-zinc-500 block">{act.date}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Latest Certificate summary */}
+                                <div className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl flex flex-col justify-between gap-4">
+                                    <div className="space-y-2">
+                                        <div className="inline-flex px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] uppercase font-bold tracking-wider">
+                                            Latest Certificate
+                                        </div>
+                                        <h3 className="text-xl font-extrabold text-white leading-tight">
+                                            {certificatesToDisplay[0]?.certificate_title || 'Introduction to Robotics'}
+                                        </h3>
+                                        <p className="text-xs text-zinc-400">
+                                            ID: {certificatesToDisplay[0]?.certificate_id} • Issued on {certificatesToDisplay[0]?.issue_date}
+                                        </p>
+                                    </div>
+                                    <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                                            <CheckCircle size={14} />
+                                            Verified Account
+                                        </span>
+                                        <button 
+                                            onClick={() => setActiveTab('certificates')}
+                                            className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 cursor-pointer"
+                                        >
+                                            View All
                                             <ChevronRight size={14} />
                                         </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Projects Tab */}
-                    {activeTab === 'projects' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {activeProjects.map((project) => (
-                                <div key={project.id} className="group p-5 bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl flex flex-col justify-between gap-4 transition-all duration-300">
-                                    <div className="flex gap-4">
-                                        <div className="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                                            <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
-                                                    {project.category}
-                                                </span>
-                                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded ${
-                                                    project.difficulty === 'Beginner' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                    project.difficulty === 'Intermediate' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                                                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                                }`}>
-                                                    {project.difficulty}
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-lg text-white group-hover:text-red-500 transition-colors truncate mt-1">
-                                                {project.title}
-                                            </h3>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {/* Step completion counter */}
-                                        <div className="flex items-center justify-between text-xs text-zinc-400">
-                                            <span className="flex items-center gap-1">
-                                                <CheckCircle size={14} className={project.status === 'Completed' ? 'text-emerald-400' : 'text-zinc-500'} />
-                                                Steps Completed
-                                            </span>
-                                            <span className="font-bold">{project.completedSteps}/{project.totalSteps}</span>
-                                        </div>
-                                        <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full transition-all duration-500 ${
-                                                    project.status === 'Completed' ? 'bg-emerald-500' : 'bg-red-500'
-                                                }`}
-                                                style={{ width: `${(project.completedSteps / project.totalSteps) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs">
-                                        <span className="text-zinc-500">Updated {project.lastUpdated}</span>
-                                        <button className="font-bold text-red-500 hover:text-red-400 cursor-pointer">
-                                            {project.status === 'Completed' ? 'Rebuild Guide' : 'Continue Project'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Activities Tab */}
-                    {activeTab === 'activities' && (
-                        <div className="bg-zinc-900/20 border border-zinc-800/85 rounded-2xl p-6 relative">
-                            <div className="absolute left-9 top-8 bottom-8 w-[2px] bg-zinc-800 pointer-events-none" />
-                            <div className="space-y-8">
-                                {activities.map((act) => {
-                                    const IconComponent = act.icon;
-                                    return (
-                                        <div key={act.id} className="relative flex gap-4 items-start pl-8 group">
-                                            {/* Icon Indicator */}
-                                            <div className={`absolute left-[7px] w-6 h-6 rounded-full flex items-center justify-center border border-zinc-950 ${act.color} z-[1] transition-transform duration-300 group-hover:scale-110`}>
-                                                <IconComponent size={12} />
-                                            </div>
-                                            {/* Details */}
-                                            <div className="space-y-0.5 min-w-0 flex-1">
-                                                <div className="flex items-center justify-between gap-2 flex-wrap">
-                                                    <h4 className="font-bold text-zinc-100 group-hover:text-red-500 transition-colors text-sm md:text-base">
-                                                        {act.title}
-                                                    </h4>
-                                                    <span className="text-xs text-zinc-500">{act.date}</span>
-                                                </div>
-                                                <p className="text-xs md:text-sm text-zinc-400">{act.description}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
                             </div>
                         </div>
                     )}
+
+                    {/* TAB: MY COURSES */}
+                    {activeTab === 'courses' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-white uppercase">My Courses</h1>
+                                <p className="text-zinc-400 text-sm mt-1">Manage and resume your enrolled classes.</p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                {enrolledCourses.map((course) => (
+                                    <div key={course.id} className="group p-5 bg-zinc-900/30 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl flex flex-col sm:flex-row gap-4 transition-all duration-300">
+                                        <div className="w-20 h-20 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                                            <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 space-y-3 min-w-0">
+                                            <div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
+                                                        {course.category}
+                                                    </span>
+                                                    <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                                                        <Clock size={12} />
+                                                        Last active {course.lastAccessed}
+                                                    </span>
+                                                </div>
+                                                <h3 className="font-bold text-lg text-white group-hover:text-red-500 transition-colors truncate mt-1">
+                                                    {course.title}
+                                                </h3>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between text-xs text-zinc-400">
+                                                    <span>Progress</span>
+                                                    <span className="font-bold">{course.progress}%</span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-red-500 to-amber-500 transition-all duration-500"
+                                                        style={{ width: `${course.progress}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: MY PROJECTS */}
+                    {activeTab === 'projects' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-white uppercase">Hardware Projects</h1>
+                                <p className="text-zinc-400 text-sm mt-1">Review active circuitry building milestones.</p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                {activeProjects.map((project) => (
+                                    <div key={project.id} className="p-5 bg-zinc-900/30 border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl space-y-4 transition-all duration-300">
+                                        <div className="flex gap-4">
+                                            <div className="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                                                <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="px-2 py-0.5 bg-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider rounded">
+                                                        {project.category}
+                                                    </span>
+                                                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded ${
+                                                        project.difficulty === 'Beginner' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                                                    }`}>
+                                                        {project.difficulty}
+                                                    </span>
+                                                </div>
+                                                <h3 className="font-bold text-lg text-white mt-1 truncate">
+                                                    {project.title}
+                                                </h3>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-xs text-zinc-400">
+                                                <span>Steps Completed</span>
+                                                <span>{project.completedSteps}/{project.totalSteps}</span>
+                                            </div>
+                                            <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-red-500"
+                                                    style={{ width: `${(project.completedSteps / project.totalSteps) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: CERTIFICATES */}
+                    {activeTab === 'certificates' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-white uppercase">My Certifications</h1>
+                                <p className="text-zinc-400 text-sm mt-1">Verified course completions and rewards.</p>
+                            </div>
+
+                            {loadingCerts ? (
+                                <div className="py-8 flex items-center justify-center">
+                                    <div className="w-6 h-6 border-2 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {certificatesToDisplay.map((cert) => (
+                                        <div key={cert.id} className="p-5 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4 hover:border-zinc-700/80 transition-all duration-300">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex gap-4">
+                                                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                                                        <Award size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <span className="px-2 py-0.5 bg-zinc-800 text-[9px] uppercase font-bold text-zinc-400 tracking-wider rounded">
+                                                            {cert.certificate_type || 'Course Completion'}
+                                                        </span>
+                                                        <h3 className="font-extrabold text-lg text-white mt-1">
+                                                            {cert.certificate_title || 'Foundations of Electronics'}
+                                                        </h3>
+                                                        <p className="text-xs text-zinc-500 mt-0.5">
+                                                            ID: {cert.certificate_id} • Issued {cert.issue_date}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
+                                                    <CheckCircle size={10} />
+                                                    {cert.verification_status ? 'Verified' : 'Pending'}
+                                                </span>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-zinc-800/80 flex items-center gap-3 justify-end">
+                                                {cert.certificate_pdf_url && cert.certificate_pdf_url !== '#' && (
+                                                    <a
+                                                        href={cert.certificate_pdf_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-white rounded-lg text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                                    >
+                                                        <Download size={14} />
+                                                        Download PDF
+                                                    </a>
+                                                )}
+                                                <Link
+                                                    to={`/certificate/${cert.certificate_id}`}
+                                                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-2 transition-colors cursor-pointer"
+                                                >
+                                                    <FileText size={14} />
+                                                    View Details
+                                                    <ExternalLink size={12} />
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TAB: SETTINGS */}
+                    {activeTab === 'settings' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-white uppercase">Profile Settings</h1>
+                                <p className="text-zinc-400 text-sm mt-1">Manage your account information and preferences.</p>
+                            </div>
+                            <div className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={displayName} 
+                                        disabled
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 cursor-not-allowed" 
+                                    />
+                                    <p className="text-[10px] text-zinc-600">Contact support to change your name on certificates.</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Email Address</label>
+                                    <input 
+                                        type="text" 
+                                        value={user.email} 
+                                        disabled
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 cursor-not-allowed" 
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Registered Account Date</label>
+                                    <input 
+                                        type="text" 
+                                        value={new Date(user.created_at).toLocaleDateString()} 
+                                        disabled
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 cursor-not-allowed" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+
+                {/* COLUMN 3: RIGHT USER PANEL CARD */}
+                <div className="lg:col-span-3 space-y-6">
+                    <div className="p-6 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl space-y-6 flex flex-col items-center justify-between text-center relative overflow-hidden">
+                        
+                        {/* Profile Details header */}
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-3xl font-extrabold text-white shadow-xl shadow-red-500/20">
+                                {initials}
+                            </div>
+                            <div className="space-y-0.5">
+                                <h3 className="font-extrabold text-xl text-white tracking-tight">{displayName}</h3>
+                                <p className="text-xs text-zinc-500">{user.email}</p>
+                            </div>
+                        </div>
+
+                        {/* Stats Counter Matrix */}
+                        <div className="w-full grid grid-cols-2 gap-3 pt-4 border-t border-zinc-800/80">
+                            <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-zinc-500">enrolled</span>
+                                <h4 className="font-extrabold text-lg text-zinc-100">{enrolledCourses.length}</h4>
+                            </div>
+                            <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-zinc-500">projects</span>
+                                <h4 className="font-extrabold text-lg text-zinc-100">{activeProjects.length}</h4>
+                            </div>
+                            <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-zinc-500">certificates</span>
+                                <h4 className="font-extrabold text-lg text-zinc-100">{certificatesToDisplay.length}</h4>
+                            </div>
+                            <div className="p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-zinc-500">active days</span>
+                                <h4 className="font-extrabold text-lg text-zinc-100">12</h4>
+                            </div>
+                        </div>
+
+                        {/* Progress meters matching reference */}
+                        <div className="w-full space-y-4 pt-4 border-t border-zinc-800/80 text-left">
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs text-zinc-400">
+                                    <span>Your Rank</span>
+                                    <span className="font-bold text-red-500">Top 32%</span>
+                                </div>
+                                <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-red-500 to-amber-500" style={{ width: '32%' }} />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs text-zinc-400">
+                                    <span>XP Level Progress</span>
+                                    <span className="font-bold text-red-500">70%</span>
+                                </div>
+                                <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-red-500 to-amber-500" style={{ width: '70%' }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Logout action */}
+                        <button
+                            onClick={handleSignOut}
+                            className="w-full mt-4 py-3 bg-zinc-950/80 hover:bg-red-500/10 border border-zinc-850 hover:border-red-500/20 text-zinc-400 hover:text-red-400 rounded-xl text-xs font-extrabold inline-flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+                        >
+                            <LogOut size={14} />
+                            Log Out Account
+                        </button>
+
+                    </div>
                 </div>
 
             </div>
