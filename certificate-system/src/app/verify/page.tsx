@@ -247,8 +247,16 @@ export default function VerifyPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 py-8 text-center text-sm text-gray-500 dark:text-neutral-500">
-        <div className="max-w-6xl mx-auto px-4">
-          &copy; {new Date().getFullYear()} CircuitCrate Private Limited. All rights reserved.
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <span>
+            &copy; {new Date().getFullYear()} CircuitCrate Private Limited. All rights reserved.
+          </span>
+          <Link 
+            href="/admin" 
+            className="text-xs font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          >
+            Admin Console
+          </Link>
         </div>
       </footer>
     </div>

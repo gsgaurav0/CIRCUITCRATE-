@@ -67,6 +67,10 @@ export async function updateSession(request: NextRequest) {
       await supabase.auth.signOut()
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
+
+    if (url.pathname === '/admin' || url.pathname === '/admin/') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
   }
 
   return supabaseResponse
