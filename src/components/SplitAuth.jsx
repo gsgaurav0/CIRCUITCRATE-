@@ -12,7 +12,9 @@ const SplitAuth = () => {
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [name, setName] = useState('');
+    const [interest, setInterest] = useState('Student');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -29,7 +31,9 @@ const SplitAuth = () => {
         setIsForgotPassword(false);
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
         setName('');
+        setInterest('Student');
         setError('');
         setSuccess('');
     };
@@ -65,9 +69,19 @@ const SplitAuth = () => {
             return;
         }
 
-        if (!isLogin && !name.trim()) {
-            setError('Please enter your full name.');
-            return;
+        if (!isLogin) {
+            if (!name.trim()) {
+                setError('Please enter your full name.');
+                return;
+            }
+            if (password !== confirmPassword) {
+                setError('Passwords do not match.');
+                return;
+            }
+            if (password.length < 6) {
+                setError('Password must be at least 6 characters long.');
+                return;
+            }
         }
 
         setSubmitting(true);
@@ -89,6 +103,7 @@ const SplitAuth = () => {
                     options: {
                         data: {
                             full_name: name.trim(),
+                            interest: interest,
                         },
                     },
                 });
@@ -96,7 +111,9 @@ const SplitAuth = () => {
                 setSuccess('Account created successfully! Check your email for a confirmation link.');
                 setEmail('');
                 setPassword('');
+                setConfirmPassword('');
                 setName('');
+                setInterest('Student');
             }
         } catch (err) {
             setError(err.message || 'An error occurred during authentication.');
@@ -125,10 +142,10 @@ const SplitAuth = () => {
     };
 
     return (
-        <div className="flex w-full h-screen bg-black overflow-hidden font-[sans-serif]">
+        <div className="flex w-full min-h-screen bg-black overflow-hidden font-[sans-serif]">
             {/* Left Section - Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16 relative">
-                <div className="w-full max-w-[450px] space-y-8">
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16 relative overflow-y-auto">
+                <div className="w-full max-w-[450px] space-y-8 my-8">
                     <div className="space-y-4">
                         <h2 className="text-4xl font-bold tracking-tight text-white uppercase">
                             {isForgotPassword 
@@ -158,7 +175,7 @@ const SplitAuth = () => {
                         </div>
                     )}
 
-                    <form className="space-y-6 mt-8" onSubmit={handleEmailAuth}>
+                    <form className="space-y-6" onSubmit={handleEmailAuth}>
                         {/* Name Input (Signup Only) */}
                         {!isLogin && !isForgotPassword && (
                             <div className="space-y-2">
@@ -205,6 +222,42 @@ const SplitAuth = () => {
                                     className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-white placeholder:text-gray-600"
                                     required
                                 />
+                            </div>
+                        )}
+
+                        {/* Confirm Password Input (Signup Only) */}
+                        {!isLogin && !isForgotPassword && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-300">
+                                    Confirm Password
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="**********"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-white placeholder:text-gray-600"
+                                    required
+                                />
+                            </div>
+                        )}
+
+                        {/* Interest Select Dropdown (Signup Only) */}
+                        {!isLogin && !isForgotPassword && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-300">
+                                    Primary Interest / Role
+                                </label>
+                                <select
+                                    value={interest}
+                                    onChange={(e) => setInterest(e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-zinc-300 cursor-pointer"
+                                >
+                                    <option value="Student">Student</option>
+                                    <option value="Hobbyist">Hobbyist</option>
+                                    <option value="Professional">Professional</option>
+                                    <option value="Educator">Educator</option>
+                                </select>
                             </div>
                         )}
 
