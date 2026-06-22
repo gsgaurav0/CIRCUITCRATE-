@@ -449,17 +449,31 @@ const StaggeredMenu = ({
                             {items && items.length ? (
                                 items.map((it, idx) => (
                                     <li className="sm-panel-itemWrap relative overflow-hidden leading-none" key={it.label + idx}>
-                                        <Link
-                                            className="sm-panel-item relative text-black font-semibold text-[3rem] cursor-pointer leading-none tracking-[-2px] uppercase transition-[background,color] duration-150 ease-linear inline-block no-underline pr-[1.4em]"
-                                            to={it.link}
-                                            aria-label={it.ariaLabel}
-                                            onClick={closeMenu}
-                                            data-index={idx + 1}
-                                        >
-                                            <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
-                                                {it.label}
-                                            </span>
-                                        </Link>
+                                        {it.link.startsWith('http://') || it.link.startsWith('https://') ? (
+                                            <a
+                                                className="sm-panel-item relative text-black font-semibold text-[3rem] cursor-pointer leading-none tracking-[-2px] uppercase transition-[background,color] duration-150 ease-linear inline-block no-underline pr-[1.4em]"
+                                                href={it.link}
+                                                aria-label={it.ariaLabel}
+                                                onClick={closeMenu}
+                                                data-index={idx + 1}
+                                            >
+                                                <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
+                                                    {it.label}
+                                                </span>
+                                            </a>
+                                        ) : (
+                                            <Link
+                                                className="sm-panel-item relative text-black font-semibold text-[3rem] cursor-pointer leading-none tracking-[-2px] uppercase transition-[background,color] duration-150 ease-linear inline-block no-underline pr-[1.4em]"
+                                                to={it.link}
+                                                aria-label={it.ariaLabel}
+                                                onClick={closeMenu}
+                                                data-index={idx + 1}
+                                            >
+                                                <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
+                                                    {it.label}
+                                                </span>
+                                            </Link>
+                                        )}
                                     </li>
                                 ))
                             ) : (
