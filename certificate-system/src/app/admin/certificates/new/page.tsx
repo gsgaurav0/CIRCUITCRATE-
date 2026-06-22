@@ -73,7 +73,11 @@ export default function NewCertificatePage() {
 
   // Generate QR code and return both public URL and base64 DataURL
   const generateQRCode = async (certificateId: string): Promise<{ publicUrl: string; dataUrl: string }> => {
-    const verifyUrl = `${window.location.origin}/certificate/${certificateId}`
+    let origin = window.location.origin
+    if (origin.includes('admin.')) {
+      origin = origin.replace('admin.', 'verify.')
+    }
+    const verifyUrl = `${origin}/certificate/${certificateId}`
 
     const dataUrl = await QRCode.toDataURL(verifyUrl, {
       errorCorrectionLevel: 'H',

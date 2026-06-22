@@ -61,7 +61,10 @@ export async function POST(request: NextRequest) {
 
     let importedCount = 0
     const errors: string[] = []
-    const origin = request.nextUrl.origin
+    let origin = request.nextUrl.origin
+    if (origin.includes('admin.')) {
+      origin = origin.replace('admin.', 'verify.')
+    }
 
     // Process rows sequentially
     for (let index = 0; index < rows.length; index++) {
