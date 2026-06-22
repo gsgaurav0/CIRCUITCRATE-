@@ -76,7 +76,7 @@ export default async function CertificateDetailPage({ params }: PageProps) {
   }
   const certUrl = `${protocol}://${verifyHost}/certificate/${id}`
   const linkedinUrl = cert
-    ? `https://www.linkedin.com/certifications/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(
+    ? `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(
         cert.certificate_title
       )}&organizationName=CircuitCrate&certId=${encodeURIComponent(
         cert.certificate_id
