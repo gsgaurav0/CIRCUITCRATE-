@@ -142,9 +142,9 @@ const SplitAuth = () => {
     };
 
     return (
-        <div className="flex w-full min-h-screen bg-black overflow-hidden font-[sans-serif]">
+        <div className="flex w-full h-screen bg-black overflow-hidden font-[sans-serif]">
             {/* Left Section - Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16 relative overflow-y-auto">
+            <div className="w-full lg:w-1/2 h-full flex items-center justify-center p-8 lg:p-16 relative overflow-y-auto">
                 <div className="w-full max-w-[450px] space-y-8 my-8">
                     <div className="space-y-4">
                         <h2 className="text-4xl font-bold tracking-tight text-white uppercase">
