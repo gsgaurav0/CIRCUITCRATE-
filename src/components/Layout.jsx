@@ -16,7 +16,6 @@ const Layout = () => {
         { label: 'Courses', ariaLabel: 'Our Courses', link: '/courses' },
         { label: 'Projects', ariaLabel: 'Projects', link: '/learning' },
         { label: 'Workshops', ariaLabel: 'Events', link: '/workshops' },
-        { label: 'Verify', ariaLabel: 'Verify Certificates', link: 'https://verify.circuitcrate.in/' },
         { label: 'Contact', ariaLabel: 'Contact', link: '/contact' },
         user 
             ? { label: displayName, ariaLabel: 'Profile Dashboard', link: '/profile' }
