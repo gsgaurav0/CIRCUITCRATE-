@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { 
     BookOpen, Cpu, Award, Settings, LogOut, CheckCircle, 
-    Clock, ChevronRight, User, ExternalLink, Download, FileText 
+    Clock, ChevronRight, User, ExternalLink, Download, FileText, Camera 
 } from 'lucide-react';
 import { coursesData } from '../data/coursesData';
 import { projectsData } from '../data/projectsData';
@@ -15,6 +15,105 @@ const Profile = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [dbCertificates, setDbCertificates] = useState([]);
     const [loadingCerts, setLoadingCerts] = useState(true);
+
+    const [avatarUrl, setAvatarUrl] = useState('');
+    const [nameInput, setNameInput] = useState('');
+    const [interestInput, setInterestInput] = useState('Student');
+    const [updatingProfile, setUpdatingProfile] = useState(false);
+    const [profileError, setProfileError] = useState('');
+    const [profileSuccess, setProfileSuccess] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            setAvatarUrl(user?.user_metadata?.avatar_url || '');
+            setNameInput(user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '');
+            setInterestInput(user?.user_metadata?.interest || 'Student');
+        }
+    }, [user]);
+
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setProfileError('Please upload an image file.');
+            return;
+        }
+
+        setUpdatingProfile(true);
+        setProfileError('');
+        setProfileSuccess('');
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 150;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height *= MAX_SIZE / width;
+                        width = MAX_SIZE;
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height;
+                        height = MAX_SIZE;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+
+                supabase.auth.updateUser({
+                    data: { avatar_url: dataUrl }
+                }).then(({ error }) => {
+                    if (error) {
+                        setProfileError(error.message);
+                    } else {
+                        setAvatarUrl(dataUrl);
+                        setProfileSuccess('Profile picture updated successfully!');
+                    }
+                    setUpdatingProfile(false);
+                }).catch((err) => {
+                    setProfileError(err.message || 'Failed to upload profile picture.');
+                    setUpdatingProfile(false);
+                });
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        setUpdatingProfile(true);
+        setProfileError('');
+        setProfileSuccess('');
+
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: {
+                    full_name: nameInput.trim(),
+                    interest: interestInput
+                }
+            });
+
+            if (error) throw error;
+            setProfileSuccess('Profile updated successfully!');
+        } catch (err) {
+            setProfileError(err.message || 'Failed to update profile settings.');
+        } finally {
+            setUpdatingProfile(false);
+        }
+    };
 
     // Redirect to login if user is not authenticated
     useEffect(() => {
@@ -56,8 +155,8 @@ const Profile = () => {
         );
     }
 
-    const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
-    const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const displayName = nameInput || 'User';
+    const initials = displayName.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
     // Enrolled courses (mock status matching layout cards)
     const enrolledCourses = [
@@ -150,18 +249,7 @@ const Profile = () => {
                 
                 {/* COLUMN 1: LEFT SIDEBAR NAVIGATION */}
                 <div className="lg:col-span-3 space-y-6">
-                    {/* App Identity */}
-                    <div className="p-4 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl hidden lg:block">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center font-black text-xl text-white">
-                                C²
-                            </div>
-                            <div>
-                                <h3 className="font-extrabold text-sm tracking-wide uppercase text-white">CircuitCrate</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">LMS Dashboard</p>
-                            </div>
-                        </div>
-                    </div>
+                    {/* App Identity Box Removed */} 
 
                     {/* Sidebar Buttons */}
                     <div className="bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-3 space-y-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1">
@@ -478,36 +566,113 @@ const Profile = () => {
                                 <h1 className="text-3xl font-extrabold text-white uppercase">Profile Settings</h1>
                                 <p className="text-zinc-400 text-sm mt-1">Manage your account information and preferences.</p>
                             </div>
-                            <div className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
+
+                            {profileError && (
+                                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    {profileError}
+                                </div>
+                            )}
+
+                            {profileSuccess && (
+                                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                                    {profileSuccess}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSaveProfile} className="p-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl space-y-4">
+                                {/* Profile Picture Upload Section in Settings */}
+                                <div className="space-y-2 border-b border-zinc-800/80 pb-4 flex items-center gap-4">
+                                    <div className="relative group/settings-avatar cursor-pointer" onClick={() => document.getElementById('avatar-upload-settings-input').click()}>
+                                        {avatarUrl ? (
+                                            <img 
+                                                src={avatarUrl} 
+                                                alt="Profile" 
+                                                className="w-16 h-16 rounded-full object-cover border border-zinc-800 group-hover/settings-avatar:opacity-60 transition-all"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-2xl font-extrabold text-white group-hover/settings-avatar:opacity-85 transition-all">
+                                                {initials}
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full opacity-0 group-hover/settings-avatar:opacity-100 transition-opacity">
+                                            <Camera size={14} className="text-white" />
+                                            <span className="text-[8px] uppercase font-bold tracking-wider text-white mt-0.5">Upload</span>
+                                        </div>
+                                        <input 
+                                            type="file" 
+                                            id="avatar-upload-settings-input" 
+                                            accept="image/*" 
+                                            className="hidden" 
+                                            onChange={handleAvatarUpload}
+                                        />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-zinc-200">Profile Picture</h4>
+                                        <button 
+                                            type="button"
+                                            onClick={() => document.getElementById('avatar-upload-settings-input').click()}
+                                            className="text-xs text-red-500 hover:text-red-400 font-semibold cursor-pointer bg-transparent border-0 p-0"
+                                        >
+                                            Change avatar
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Name</label>
+                                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Full Name</label>
                                     <input 
                                         type="text" 
-                                        value={displayName} 
-                                        disabled
-                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 cursor-not-allowed" 
+                                        value={nameInput} 
+                                        onChange={(e) => setNameInput(e.target.value)}
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-red-500" 
+                                        required
                                     />
-                                    <p className="text-[10px] text-zinc-600">Contact support to change your name on certificates.</p>
+                                    <p className="text-[10px] text-zinc-500">This name will be displayed on your profile and certificates.</p>
                                 </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Primary Interest / Role</label>
+                                    <select
+                                        value={interestInput}
+                                        onChange={(e) => setInterestInput(e.target.value)}
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:border-red-500 cursor-pointer"
+                                    >
+                                        <option value="Student">Student</option>
+                                        <option value="Hobbyist">Hobbyist</option>
+                                        <option value="Professional">Professional</option>
+                                        <option value="Educator">Educator</option>
+                                    </select>
+                                </div>
+
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Email Address</label>
                                     <input 
                                         type="text" 
                                         value={user.email} 
                                         disabled
-                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 cursor-not-allowed" 
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-555 cursor-not-allowed" 
                                     />
+                                    <p className="text-[10px] text-zinc-600">Email addresses cannot be modified directly.</p>
                                 </div>
+
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Registered Account Date</label>
                                     <input 
                                         type="text" 
                                         value={new Date(user.created_at).toLocaleDateString()} 
                                         disabled
-                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 cursor-not-allowed" 
+                                        className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-555 cursor-not-allowed" 
                                     />
                                 </div>
-                            </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={updatingProfile}
+                                    className="w-full py-3 bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors cursor-pointer border-0"
+                                >
+                                    {updatingProfile ? 'Saving Changes...' : 'Save Settings'}
+                                </button>
+                            </form>
                         </div>
                     )}
 
@@ -519,12 +684,36 @@ const Profile = () => {
                         
                         {/* Profile Details header */}
                         <div className="flex flex-col items-center gap-3">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-3xl font-extrabold text-white shadow-xl shadow-red-500/20">
-                                {initials}
+                            <div className="relative group/avatar cursor-pointer" onClick={() => document.getElementById('avatar-upload-input').click()}>
+                                {avatarUrl ? (
+                                    <img 
+                                        src={avatarUrl} 
+                                        alt="Profile" 
+                                        className="w-20 h-20 rounded-full object-cover border-2 border-zinc-800 shadow-xl group-hover/avatar:opacity-60 transition-all"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center text-3xl font-extrabold text-white shadow-xl shadow-red-500/20 group-hover/avatar:opacity-85 transition-all">
+                                        {initials}
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                                    <Camera size={18} className="text-white" />
+                                    <span className="text-[9px] uppercase font-bold tracking-wider text-white mt-0.5">Upload</span>
+                                </div>
+                                <input 
+                                    type="file" 
+                                    id="avatar-upload-input" 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    onChange={handleAvatarUpload}
+                                />
                             </div>
                             <div className="space-y-0.5">
                                 <h3 className="font-extrabold text-xl text-white tracking-tight">{displayName}</h3>
-                                <p className="text-xs text-zinc-500">{user.email}</p>
+                                <p className="text-xs text-zinc-555 font-medium">{user.email}</p>
+                                <span className="inline-block px-2.5 py-0.5 mt-1 rounded bg-zinc-800 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                                    {interestInput}
+                                </span>
                             </div>
                         </div>
 
