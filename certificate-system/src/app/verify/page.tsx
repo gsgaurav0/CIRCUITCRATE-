@@ -159,7 +159,7 @@ export default function VerifyPage() {
               </div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-red-400 mb-2">Verification Failed</h3>
               <p className="text-gray-600 dark:text-neutral-400 max-w-md mx-auto">
-                No matching certificate was found with <span className="font-semibold text-red-500">"{query}"</span>. Ensure details are correct or contact issuing administrator.
+                No matching certificate was found with <span className="font-semibold text-red-500">&quot;{query}&quot;</span>. Ensure details are correct or contact issuing administrator.
               </p>
             </div>
           )}

@@ -1,14 +1,15 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Award, ArrowLeft, Loader2, Save, FileText, Sparkles, Calendar } from 'lucide-react'
+import { ArrowLeft, Loader2, Save, Sparkles, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
+import QRCode from 'qrcode'
 
 const certificateSchema = z.object({
   candidate_name: z.string().min(2, 'Candidate name must be at least 2 characters.'),
@@ -72,7 +73,6 @@ export default function NewCertificatePage() {
 
   // Generate QR code and return both public URL and base64 DataURL
   const generateQRCode = async (certificateId: string): Promise<{ publicUrl: string; dataUrl: string }> => {
-    const QRCode = require('qrcode')
     const verifyUrl = `${window.location.origin}/certificate/${certificateId}`
 
     const dataUrl = await QRCode.toDataURL(verifyUrl, {
@@ -537,7 +537,7 @@ export default function NewCertificatePage() {
               <Sparkles className="shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold uppercase tracking-wider block mb-0.5">Auto-Generation Features Active</span>
-                By clicking "Issue Certificate", the system will automatically:
+                By clicking &quot;Issue Certificate&quot;, the system will automatically:
                 <ul className="list-disc pl-4 mt-1 space-y-0.5">
                   <li>Generate a unique secure Certificate ID.</li>
                   <li>Create a verification QR code and host it in Supabase Storage.</li>

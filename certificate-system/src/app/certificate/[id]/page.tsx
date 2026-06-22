@@ -111,7 +111,7 @@ export default async function CertificateDetailPage({ params }: PageProps) {
             </div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-4">Invalid Certificate</h1>
             <p className="text-gray-600 dark:text-neutral-400 max-w-md mx-auto mb-8">
-              The certificate ID <span className="font-bold text-red-500">"{id}"</span> is not recognized by our registry or has been revoked.
+              The certificate ID <span className="font-bold text-red-500">&quot;{id}&quot;</span> is not recognized by our registry or has been revoked.
             </p>
             <Link
               href="/verify"
