@@ -1,18 +1,105 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FcGoogle } from 'react-icons/fc';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import img from '../assets/about_robotics_hands.png';
 
 const SplitAuth = () => {
+    const navigate = useNavigate();
+    const { user, loading: authLoading } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    // If user is already logged in, redirect to home page
+    useEffect(() => {
+        if (user && !authLoading) {
+            navigate('/');
+        }
+    }, [user, authLoading, navigate]);
 
     const toggleAuthMode = () => {
         setIsLogin(!isLogin);
         setEmail('');
         setPassword('');
         setName('');
+        setError('');
+        setSuccess('');
+    };
+
+    const handleEmailAuth = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        if (!email.trim() || !password) {
+            setError('Please fill in all required fields.');
+            return;
+        }
+
+        if (!isLogin && !name.trim()) {
+            setError('Please enter your full name.');
+            return;
+        }
+
+        setSubmitting(true);
+
+        try {
+            if (isLogin) {
+                // Log in
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: email.trim(),
+                    password,
+                });
+                if (signInError) throw signInError;
+                navigate('/');
+            } else {
+                // Sign up
+                const { error: signUpError } = await supabase.auth.signUp({
+                    email: email.trim(),
+                    password,
+                    options: {
+                        data: {
+                            full_name: name.trim(),
+                        },
+                    },
+                });
+                if (signUpError) throw signUpError;
+                setSuccess('Account created successfully! Check your email for a confirmation link.');
+                // Clear inputs
+                setEmail('');
+                setPassword('');
+                setName('');
+            }
+        } catch (err) {
+            setError(err.message || 'An error occurred during authentication.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleGoogleAuth = async () => {
+        setError('');
+        setSuccess('');
+        setSubmitting(true);
+
+        try {
+            const { error: oauthError } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin,
+                },
+            });
+            if (oauthError) throw oauthError;
+        } catch (err) {
+            setError(err.message || 'Failed to authenticate with Google.');
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -31,7 +118,19 @@ const SplitAuth = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-6 mt-8">
+                    {error && (
+                        <div className="p-4 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex gap-2 items-center">
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="p-4 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex gap-2 items-center">
+                            <span>{success}</span>
+                        </div>
+                    )}
+
+                    <form className="space-y-6 mt-8" onSubmit={handleEmailAuth}>
                         {/* Name Input (Signup Only) */}
                         {!isLogin && (
                             <div className="space-y-2">
@@ -44,6 +143,7 @@ const SplitAuth = () => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-white placeholder:text-gray-600"
+                                    required
                                 />
                             </div>
                         )}
@@ -59,6 +159,7 @@ const SplitAuth = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-white placeholder:text-gray-600"
+                                required
                             />
                         </div>
 
@@ -73,6 +174,7 @@ const SplitAuth = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors text-white placeholder:text-gray-600"
+                                required
                             />
                         </div>
 
@@ -95,15 +197,18 @@ const SplitAuth = () => {
                         {/* Buttons */}
                         <div className="space-y-4 pt-2">
                             <button
-                                type="button"
-                                className="w-full py-3.5 px-4 bg-[#ef4444] hover:bg-[#dc2626] text-white font-semibold rounded-lg transition-colors shadow-sm active:transform active:scale-[0.99]"
+                                type="submit"
+                                disabled={submitting}
+                                className="w-full py-3.5 px-4 bg-[#ef4444] hover:bg-[#dc2626] text-white font-semibold rounded-lg transition-colors shadow-sm active:transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isLogin ? 'Sign in' : 'Sign up'}
+                                {submitting ? 'Please wait...' : isLogin ? 'Sign in' : 'Sign up'}
                             </button>
 
                             <button
                                 type="button"
-                                className="w-full py-3.5 px-4 bg-white border border-gray-200 hover:bg-gray-100 text-gray-900 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm active:transform active:scale-[0.99]"
+                                onClick={handleGoogleAuth}
+                                disabled={submitting}
+                                className="w-full py-3.5 px-4 bg-white border border-gray-200 hover:bg-gray-100 text-gray-900 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm active:transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <FcGoogle className="text-xl" />
                                 {isLogin ? 'Sign in with Google' : 'Sign up with Google'}
@@ -129,7 +234,6 @@ const SplitAuth = () => {
             {/* Right Section - Image */}
             <div className="hidden lg:block w-1/2 h-full relative bg-gray-100">
                 <div className="absolute inset-0">
-                    {/* Using the robotics hand image as requested */}
                     <img
                         src={img}
                         alt="Authentication Illustration"

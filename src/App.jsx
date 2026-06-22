@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import { AuthProvider } from './context/AuthContext';
 
 // Lazy load pages for performance optimization
 const Home = lazy(() => import('./pages/Home'));
@@ -21,22 +22,24 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="about" element={<About />} />
-            <Route path="courses" element={<CoursesPage />} />
-            <Route path="learning" element={<LearningPage />} />
-            <Route path="workshops" element={<WorkshopsPage />} />
-            <Route path="contact" element={<ContactPage />} />
-            <Route path="auth" element={<AuthPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="about" element={<About />} />
+              <Route path="courses" element={<CoursesPage />} />
+              <Route path="learning" element={<LearningPage />} />
+              <Route path="workshops" element={<WorkshopsPage />} />
+              <Route path="contact" element={<ContactPage />} />
+              <Route path="auth" element={<AuthPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
