@@ -65,8 +65,16 @@ export default async function CertificateDetailPage({ params }: PageProps) {
 
   // Generate LinkedIn Certification Add URL
   // https://www.linkedin.com/certifications/add
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://circuitcrate.tech'
-  const certUrl = `${siteUrl}/certificate/${id}`
+  const host = headersList.get('host') || 'verify.circuitcrate.in'
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  
+  let verifyHost = host
+  if (host.startsWith('admin.')) {
+    verifyHost = host.replace('admin.', 'verify.')
+  } else if (!host.startsWith('verify.')) {
+    verifyHost = `verify.${host}`
+  }
+  const certUrl = `${protocol}://${verifyHost}/certificate/${id}`
   const linkedinUrl = cert
     ? `https://www.linkedin.com/certifications/add?startTask=CERTIFICATION_NAME&name=${encodeURIComponent(
         cert.certificate_title
