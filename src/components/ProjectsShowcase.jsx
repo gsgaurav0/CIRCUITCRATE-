@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { projectsData } from '../data/projectsData';
 import { fetchFromSupabase, resolveImageUrl } from '../lib/supabase';
+import { fetchProjectsFromSanity } from '../lib/sanity';
 import { Clock, Wrench, X, PlayCircle, CheckCircle2 } from 'lucide-react';
 import './ProjectsShowcase.css';
 
@@ -11,6 +12,25 @@ const ProjectsShowcase = () => {
 
     useEffect(() => {
         const loadProjects = async () => {
+            // 1. Attempt loading from Sanity CMS first
+            const sanityData = await fetchProjectsFromSanity();
+            if (sanityData && sanityData.length > 0) {
+                const mapped = sanityData.map(p => ({
+                    id: p._id,
+                    title: p.title,
+                    category: p.category,
+                    difficulty: p.difficulty,
+                    time: p.time_est,
+                    desc: p.desc_text,
+                    image: p.image,
+                    tools: p.tools || [],
+                    steps: p.steps || []
+                }));
+                setProjects(mapped);
+                return;
+            }
+
+            // 2. Fallback to Supabase
             const data = await fetchFromSupabase('projects');
             if (data && data.length > 0) {
                 const mapped = data.map(p => ({
@@ -30,11 +50,36 @@ const ProjectsShowcase = () => {
         ? projects
         : projects.filter(p => p.category === selectedCategory);
 
+    const projectSchema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Robotics & Electronics Projects",
+        "description": "Hands-on projects from LED basics to IoT weather stations.",
+        "url": "https://www.circuitcrate.in/learning",
+        "numberOfItems": projects.length,
+        "itemListElement": projects.map((project, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+                "@type": "Course",
+                "name": project.title,
+                "description": project.desc,
+                "provider": {
+                    "@type": "Organization",
+                    "name": "CircuitCrate",
+                    "url": "https://www.circuitcrate.in"
+                }
+            }
+        }))
+    };
+
     return (
         <section className="showcase-section">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }} />
             <div className="container mx-auto">
                 <div className="showcase-header">
-                    <h2 className="showcase-title">Build These Projects</h2>
+                    <h1 className="showcase-main-title">Build Real Robotics Projects — Step by Step</h1>
+                    <p className="showcase-description">12 hands-on projects from LED basics to IoT weather stations. Free, self-paced, with mentor support.</p>
 
                     <div className="filter-container">
                         {categories.map(cat => (

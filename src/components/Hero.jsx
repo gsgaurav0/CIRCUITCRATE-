@@ -40,9 +40,7 @@ const Hero = () => {
                 <div className="hero-content-wrapper">
                     <div className="hero-text-content">
                         <h1 className="hero-main-title">
-                            <span className="hero-title-line">CHANGING YOUR</span>
-                            <span className="hero-title-line">IDEA OF WHAT</span>
-                            <span className="hero-title-line hero-title-accent">ROBOTS CAN DO</span>
+                            Learn Robotics, Build Real Projects, Get Mentored <span className="hero-title-accent">— from anywhere in India.</span>
                         </h1>
 
                         <p className="hero-description">
@@ -51,8 +49,8 @@ const Hero = () => {
                         </p>
 
                         <div className="hero-actions">
-                            <Link to="/courses" className="hero-btn hero-btn-primary">Start Learning</Link>
-                            <Link to="/learning" className="hero-btn hero-btn-secondary">Read Docs</Link>
+                            <Link to="/courses" className="hero-btn hero-btn-primary">Start Free Arduino Course</Link>
+                            <Link to="/learning" className="hero-btn hero-btn-secondary">Explore Projects</Link>
                         </div>
                     </div>
 

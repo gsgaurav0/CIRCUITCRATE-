@@ -48,6 +48,7 @@ import BulkImportModal from './BulkImportModal'
 import CourseModal from '@/components/CourseModal'
 import ProjectModal from '@/components/ProjectModal'
 import WorkshopModal from '@/components/WorkshopModal'
+import { fetchProjectsFromSanity, saveProjectToSanity, deleteProjectFromSanity } from '@/lib/sanity'
 
 interface Certificate {
   id: string
@@ -189,6 +190,25 @@ export default function AdminDashboard() {
   const fetchProjects = async () => {
     setProjectsLoading(true)
     try {
+      // 1. Attempt fetching from Sanity CMS first
+      const sanityData = await fetchProjectsFromSanity()
+      if (sanityData && sanityData.length > 0) {
+        const mapped = sanityData.map((p: any) => ({
+          id: p._id,
+          title: p.title,
+          category: p.category,
+          difficulty: p.difficulty,
+          time_est: p.time_est,
+          desc_text: p.desc_text,
+          image: p.image,
+          tools: p.tools || [],
+          steps: p.steps || []
+        }))
+        setProjects(mapped)
+        return
+      }
+
+      // 2. Fallback to Supabase
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -323,6 +343,23 @@ export default function AdminDashboard() {
       async () => {
         try {
           const { data: { user } } = await supabase.auth.getUser()
+
+          // 1. Attempt deleting from Sanity CMS first
+          const sanityDeleted = await deleteProjectFromSanity(id)
+          if (sanityDeleted) {
+            if (user) {
+              await supabase.from('admin_audit_logs').insert({
+                admin_id: user.id,
+                action: 'DELETE_PROJECT_SANITY',
+                target_id: title,
+                details: { id }
+              })
+            }
+            setProjects(projects.filter(p => p.id !== id))
+            return
+          }
+
+          // 2. Fallback to Supabase
           const { error } = await supabase.from('projects').delete().eq('id', id)
 
           if (error) {
@@ -448,6 +485,25 @@ export default function AdminDashboard() {
 
   const handleSaveProject = async (projectData: any) => {
     const { data: { user } } = await supabase.auth.getUser()
+    
+    // 1. Attempt saving to Sanity CMS first
+    const sanitySaved = await saveProjectToSanity(projectData)
+    if (sanitySaved) {
+      if (user) {
+        const isUpdate = projects.some(p => p.id === projectData.id)
+        await supabase.from('admin_audit_logs').insert({
+          admin_id: user.id,
+          action: isUpdate ? 'UPDATE_PROJECT_SANITY' : 'CREATE_PROJECT_SANITY',
+          target_id: projectData.title,
+          details: projectData
+        })
+      }
+      setShowProjectModal(false)
+      fetchProjects()
+      return
+    }
+
+    // 2. Fallback to Supabase
     const isUpdate = projects.some(p => p.id === projectData.id)
 
     if (isUpdate) {

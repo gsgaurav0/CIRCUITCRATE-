@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -115,10 +113,9 @@
 }
 
 :root {
-  --elegant-font: 'Great Vibes';
   --font-noto: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-  --font-signika: 'Signika', sans-serif;
-  --font-dm-sans: 'DM Sans', sans-serif;
+  --font-signika: 'Inter', sans-serif;
+  --font-dm-sans: 'Inter', sans-serif;
 }
 
 :root[data-theme="dark"] {
@@ -653,14 +650,14 @@ section {
 
 .hero-main-title {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-size: clamp(2rem, 5vw, 4rem);
   font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -2px;
+  line-height: 1.15;
+  letter-spacing: -1.5px;
   color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .hero-title-line {
@@ -911,10 +908,9 @@ section {
   }
 
   .hero-main-title {
-    font-size: 2.5rem;
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
     letter-spacing: -1px;
     line-height: 1.2;
-    align-items: center;
   }
 
   .hero-description {

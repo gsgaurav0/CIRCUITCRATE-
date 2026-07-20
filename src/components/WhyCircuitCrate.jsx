@@ -8,9 +8,9 @@ import aboutImage from '../assets/about_robotics_hands.png';
 
 const WhyCircuitCrate = () => {
     const features = [
-        { icon: <FaUserFriends />, text: 'For All Ages & Backgrounds' },
-        { icon: <FaHandHoldingHeart />, text: 'Beginner-Friendly Approach' },
-        { icon: <FaRocket />, text: 'Industry-Relevant Skills' },
+        { icon: '⚙️', text: 'Hands-on hardware kits shipped to your door' },
+        { icon: '🤖', text: '1:1 mentorship from industry engineers' },
+        { icon: '💻', text: 'Real projects for your portfolio & competitions' },
     ];
 
     return (
@@ -30,10 +30,10 @@ const WhyCircuitCrate = () => {
                         curious about how robots work. We focus on practical, hands-on learning
                         that builds real skills you can use in the real world.
                     </p>
-                    <ul className="about-features">
+                    <ul className="about-features" role="list">
                         {features.map((feature, index) => (
                             <li key={index} className="about-feature-item">
-                                <span className="about-feature-icon">{feature.icon}</span>
+                                <span className="about-feature-icon" aria-hidden="true">{feature.icon}</span>
                                 <span className="about-feature-text">{feature.text}</span>
                             </li>
                         ))}

@@ -29,8 +29,32 @@ const Courses = () => {
         ? courses
         : courses.filter(c => c.category === filter);
 
+    const coursesSchema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Robotics & Electronics Courses",
+        "description": "Comprehensive learning path from basic electronics to advanced robotics.",
+        "url": "https://www.circuitcrate.in/courses",
+        "numberOfItems": courses.length,
+        "itemListElement": courses.map((course, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+                "@type": "Course",
+                "name": course.title,
+                "description": course.desc,
+                "provider": {
+                    "@type": "Organization",
+                    "name": "CircuitCrate",
+                    "url": "https://www.circuitcrate.in"
+                }
+            }
+        }))
+    };
+
     return (
         <section id="courses" className="courses-section">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(coursesSchema) }} />
             <div className="container mx-auto px-4">
                 <div className="courses-header">
                     <h2 className="courses-title">Explore Our <span className="text-gradient">Curriculum</span></h2>
